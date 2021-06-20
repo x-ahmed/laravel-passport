@@ -50,7 +50,34 @@ class AuthController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $data = $request->validate([
+            'email'    => ['required', 'email'],
+            'password' => ['required', new Password(8),],
+        ]);
+
+        $user = User::whereEmail($data['email'])->first();
+
+        if (!$user || !Hash::check($data['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'error'   => 'Your credentials doesn\'t match our records',
+                'status'  => Response::HTTP_UNPROCESSABLE_ENTITY,
+            ]);
+        }
+
+        $token = $user->createToken('Authentication')->accessToken;
+
+        $response = match ($request->wantsJson()) {
+            true  => response()->json([
+                'message' => 'Logged in successfully.',
+                'data'    => [
+                    'token'  => $token,
+                    'status' => Response::HTTP_OK,
+                ],
+            ], Response::HTTP_OK),
+            false => null,
+        };
+
+        return $response;
     }
 
     /**
