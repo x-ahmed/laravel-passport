@@ -79,6 +79,53 @@ class GrantAuthController extends Controller
     }
 
     /**
+     * Refresh expired access token using refresh token.
+     *
+     * https://laravel.com/docs/8.x/passport#refreshing-tokens
+     * https://laravel.com/docs/8.x/http-client#guzzle-options
+     *
+     * http://docs.guzzlephp.org/en/stable/request-options.html
+     * https://docs.guzzlephp.org/en/stable/request-options.html#verify
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     **/
+    public function refreshToken(Request $request): Response
+    {
+        $refreshToken = $request->header('RefreshToken');
+
+        $url    = config('app.url', 'http://127.0.0.1:8000');
+        $verify = (config('app.env') == 'local') ? false : true ;
+
+        $response = Http::withOptions([
+            'verify' => $verify,
+        ])->asForm()->post("{$url}/oauth/token", [
+            'grant_type'    => 'refresh_token',
+            'refresh_token' => $refreshToken,
+            'client_id'     => config('passport.personal_access_client.id'),
+            'client_secret' => config('passport.personal_access_client.secret'),
+            'scope'         => '*',
+        ]);
+
+        if(\array_key_exists(key: 'error', array: $response->json())) return response()->json([
+            'message' => 'The request is missing a required parameter.',
+            'data'    => [
+                'error'       => 'invalid_request',
+                'hint'        => 'Check the `refresh_token` parameter',
+                'description' => 'Request must have `RefreshToken` key: valueWithoutQuotes',
+            ],
+            'status'  => \Symfony\Component\HttpFoundation\Response::HTTP_BAD_REQUEST,
+        ], \Symfony\Component\HttpFoundation\Response::HTTP_BAD_REQUEST);
+
+
+        return response()->json([
+            'message' => 'Access token created successfully.',
+            'data'    => $response->json(),
+            'status'  => \Symfony\Component\HttpFoundation\Response::HTTP_CREATED,
+        ], \Symfony\Component\HttpFoundation\Response::HTTP_CREATED);
+    }
+
+    /**
      * Get password grant client token for the given credentials.
      *
      * https://laravel.com/docs/8.x/passport#requesting-password-grant-tokens
