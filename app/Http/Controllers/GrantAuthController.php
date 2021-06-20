@@ -12,6 +12,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class GrantAuthController extends Controller
 {
+    public function __construct() {
+        $this->middleware('auth:api')->only('logout');
+    }
+
     /**
      * Register password grant client users
      *
@@ -123,6 +127,24 @@ class GrantAuthController extends Controller
             'data'    => $response->json(),
             'status'  => \Symfony\Component\HttpFoundation\Response::HTTP_CREATED,
         ], \Symfony\Component\HttpFoundation\Response::HTTP_CREATED);
+    }
+
+    /**
+     * Log authenticated users out.
+     *
+     * https://laravel.com/docs/8.x/passport#revoking-tokens
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     **/
+    public function logout(Request $request): Response
+    {
+        $request->user()->token()->revoke();
+        return response()->json([
+            'errors'  => false,
+            'message' => 'logged out successfully!.',
+            'status'  => Response::HTTP_OK,
+        ], Response::HTTP_OK);
     }
 
     /**
