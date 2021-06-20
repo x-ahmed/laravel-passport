@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 class GrantAuthController extends Controller
@@ -37,6 +39,40 @@ class GrantAuthController extends Controller
                 ),
                 'status' => Response::HTTP_CREATED,
             ], Response::HTTP_CREATED),
+            false => null,
+        };
+        return $response;
+    }
+
+    /**
+     * Login password grant client users
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     **/
+    public function login(Request $request): Response
+    {
+        $data = $request->validate([
+            'email'    => ['required', 'string', 'email', 'max:255'],
+            'password' => ['required', 'string', new Password(8)],
+        ]);
+
+        if (!$user = Auth::attempt($data)) {
+            throw ValidationException::withMessages([
+                'error'   => 'Your credentials doesn\'t match our records',
+                'status'  => Response::HTTP_UNPROCESSABLE_ENTITY,
+            ]);
+        }
+
+        $response = match ($request->wantsJson()) {
+            true  => response()->json([
+                'message' => 'logged in successfully.',
+                'data'    => $this->getAccessWithRefreshedTokens(
+                    email   : $data['email'],
+                    password: $data['password']
+                ),
+                'status' => Response::HTTP_OK,
+            ], Response::HTTP_OK),
             false => null,
         };
         return $response;

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Password Grant Client
+Route::post('grant/login', [GrantAuthController::class, 'login']);
 Route::post('grant/register', [GrantAuthController::class, 'register']);
 
 // Personal Access Client
