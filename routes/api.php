@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GrantAuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Password Grant Client
+Route::post('grant/register', [GrantAuthController::class, 'register']);
+
+// Personal Access Client
 Route::post('login', [AuthController::class, 'store']);
 Route::post('register', [AuthController::class, 'index']);
 

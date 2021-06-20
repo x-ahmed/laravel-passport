@@ -2,10 +2,46 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rules\Password;
+use Symfony\Component\HttpFoundation\Response;
 
 class GrantAuthController extends Controller
 {
+    /**
+     * Register password grant client users
+     *
+     * @param \Illuminate\Http\Request $request Description
+     * @return \Illuminate\Http\Response
+     **/
+    public function register(Request $request): Response
+    {
+        $data = $request->validate([
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', new Password(8), 'confirmed'],
+        ]);
+
+        $user = User::create(\array_merge($data, [
+            'password' => bcrypt($data['password']),
+        ]));
+
+        $response = match ($request->wantsJson()) {
+            true  => response()->json([
+                'message' => 'registered successfully.',
+                'data'    => $this->getAccessWithRefreshedTokens(
+                    email   : $data['email'],
+                    password: $data['password']
+                ),
+                'status' => Response::HTTP_CREATED,
+            ], Response::HTTP_CREATED),
+            false => null,
+        };
+        return $response;
+    }
+
     /**
      * Get password grant client token for the given credentials.
      *
